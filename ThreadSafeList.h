@@ -28,7 +28,24 @@ class List
           T data;
           Node *next;
           pthread_mutex_t lock;
-          // TODO: Add your methods and data members
+          Node(T* data_t,Node* next_t=NULL):data(data_t),next(next_t){
+              pthread_mutex_init(&(this->lock), NULL);
+          }
+          Node* GetNext(bool lock_t=true){
+              if(lock_t && this->next!=NULL){
+                  pthread_mutex_lock(&(this->next->lock));
+              }
+              return this->next;
+          }
+          Node* SetNext(Node* next_t){
+              this->next = next_t;
+          }
+          void Unlock(){
+              pthread_mutex_unlock(&(this->lock));
+          }
+          void Lock(){
+                pthread_mutex_lock(&(this->lock));
+          }
         };
 
         /**
