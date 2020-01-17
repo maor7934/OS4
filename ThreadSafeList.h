@@ -15,7 +15,7 @@ class List
          * Constructor
          */
         List(): size (0), head(NULL){
-            pthread_mutex_init(&mutex_1, NULL);
+            pthread_mutex_init(&list_mutex, NULL);
             pthread_mutex_init(&mutex_2, NULL);
         }
 
@@ -26,10 +26,10 @@ class List
 
         class Node {
          public:
-          T data;
+           T data;
           Node *next;
           pthread_mutex_t lock;
-          Node(T* data_t,Node* next_t=NULL):data(data_t),next(next_t){
+          Node( const T& data_t,Node* next_t=NULL):data(data_t),next(next_t){
               pthread_mutex_init(&(this->lock), NULL);
           }
           Node* GetNext(bool lock_t=true){
@@ -38,7 +38,7 @@ class List
               }
               return this->next;
           }
-          Node* SetNext(Node* next_t){
+          void SetNext(Node* next_t){
               this->next = next_t;
           }
           void Unlock(){
@@ -57,24 +57,32 @@ class List
          */
         bool insert(const T& data) {
 
-            pthread_mutex_lock(&mutex_1);
-            Node node = new Node(data);
+            pthread_mutex_lock(&list_mutex);
+
 			if (this->head == NULL){
-                this->head = *node;
+                Node* node = new Node(data);
+                this->head = node;
+                __add_hook();
                 pthread_mutex_lock(&mutex_2);
                 this->size++;
                 pthread_mutex_unlock(&mutex_2);
-                pthread_mutex_unlock(&mutex_1);
+                pthread_mutex_unlock(&list_mutex);
                 return true;
 			}
-			this->head.Lock();
+			this->head->Lock();
             if (data < this->head->data){
+                Node* node = new Node(data);
                 node->SetNext(head);
-                this-> head = *node;
+                this-> head = node;
+                __add_hook();
+                pthread_mutex_lock(&mutex_2);
+                this->size++;
+                pthread_mutex_unlock(&mutex_2);
+                return true;
             }
-            pthread_mutex_unlock(&mutex_1);
+            pthread_mutex_unlock(&list_mutex);
 			Node* tmp_pointer = head;
-            Node* tmp_pointer2;
+            Node* tmp_pointer2= NULL    ;
 			while (data > tmp_pointer->data){
 			    if (tmp_pointer2 != NULL) {
                     tmp_pointer2->Unlock();
@@ -82,7 +90,9 @@ class List
 			    tmp_pointer2 = tmp_pointer;
 			    tmp_pointer = tmp_pointer->GetNext();
 			    if (tmp_pointer == NULL){
+                    Node* node = new Node(data);
 			        tmp_pointer2->SetNext(node);
+                    __add_hook();
                     pthread_mutex_lock(&mutex_2);
                     this->size++;
                     pthread_mutex_unlock(&mutex_2);
@@ -92,11 +102,15 @@ class List
 			}
 			if (data == tmp_pointer->data){
 			    tmp_pointer->Unlock();
-                tmp_pointer2->Unlock();
+			    if (tmp_pointer2 != NULL){
+                    tmp_pointer2->Unlock();
+                }
 			    return false;
 			}
+            Node* node = new Node(data);
 			node->SetNext(tmp_pointer);
 			tmp_pointer2->SetNext(node);
+            __add_hook();
             pthread_mutex_lock(&mutex_2);
             this->size++;
             pthread_mutex_unlock(&mutex_2);
@@ -111,23 +125,23 @@ class List
          * @return true if a matched node was found and removed and false otherwise
          */
         bool remove(const T& value) {
-            pthread_mutex_lock(&mutex_1);
+            pthread_mutex_lock(&list_mutex);
             if (this->head == NULL) {
-                pthread_mutex_unlock(&mutex_1);
+                pthread_mutex_unlock(&list_mutex);
                 return false;
             }
             this->head->Lock();
-            pthread_mutex_unlock(&mutex_1);
+            pthread_mutex_unlock(&list_mutex);
             Node* tmp_pointer = this->head;
             Node* tmp_pointer2;
-            while (value >= tmp_pointer->data){
+            while (value > tmp_pointer->data){
                 if (tmp_pointer2 != NULL) {
                     tmp_pointer2->Unlock();
                 }
                 tmp_pointer2 = tmp_pointer;
                 tmp_pointer = tmp_pointer->GetNext();
                 if (tmp_pointer == NULL){
-                    tmp_pointer2->UnLock();
+                    tmp_pointer2->Unlock();
                     return false;
                 }
             }
@@ -137,7 +151,8 @@ class List
                 return false;
             }
             tmp_pointer2->SetNext(tmp_pointer->GetNext(false));
-            delete(*tmp_pointer);
+            delete(tmp_pointer);
+            __remove_hook();
             tmp_pointer2->Unlock();
             pthread_mutex_lock(&mutex_2);
             this->size--;
@@ -150,7 +165,10 @@ class List
          * @return the list size
          */
         unsigned int getSize() {
-			//TODO: add your implementation
+            pthread_mutex_lock(&mutex_2);
+           int return_arg = this->size;
+            pthread_mutex_unlock(&mutex_2);
+            return return_arg;
         }
 
 		// Don't remove
@@ -183,9 +201,10 @@ class List
 		// Don't remove
         virtual void __remove_hook() {}
 private:
-    Node* head;
     int size;
-    pthread_mutex_t mutex_1;
+    Node* head;
+
+    pthread_mutex_t list_mutex;
     pthread_mutex_t mutex_2;
     // TODO: Add your own methods and data members
 };

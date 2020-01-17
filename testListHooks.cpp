@@ -41,7 +41,6 @@ int main() {
 
   ((MyList<int>*)l)->setValueToRemove(6);
   l->insert(11);
-
   assert(l->getSize() == 10);
   l->print(); // should print: 0,2,4,8,11,12,14,16,17,18
   return 0;

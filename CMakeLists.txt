@@ -3,4 +3,4 @@ project(OS4)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(OS4 Barrier.h ThreadSafeList.h Barrier.cpp testListHooks.cpp)
+add_executable(OS4 Barrier.h ThreadSafeList.h Barrier.cpp listTest.cpp)
