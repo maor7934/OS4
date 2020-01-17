@@ -4,6 +4,11 @@
 #include <semaphore.h>
 
 class Barrier {
+private:
+    int num_of_threads;
+    int enter_counter;
+    int exit_counter;
+    pthread_mutex_t mutex_1;
 public:
     Barrier(unsigned int num_of_threads);
     void wait();
