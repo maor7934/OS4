@@ -10,7 +10,6 @@ using namespace std;
 template <typename T>
 class List 
 {
-
     public:
         /**
          * Constructor
@@ -29,7 +28,25 @@ class List
          public:
           T data;
           Node *next;
-          // TODO: Add your methods and data members
+          pthread_mutex_t lock;
+          Node(T* data_t,Node* next_t=NULL):data(data_t),next(next_t){
+              pthread_mutex_init(&(this->lock), NULL);
+          }
+          Node* GetNext(bool lock_t=true){
+              if(lock_t && this->next!=NULL){
+                  pthread_mutex_lock(&(this->next->lock));
+              }
+              return this->next;
+          }
+          Node* SetNext(Node* next_t){
+              this->next = next_t;
+          }
+          void Unlock(){
+              pthread_mutex_unlock(&(this->lock));
+          }
+          void Lock(){
+                pthread_mutex_lock(&(this->lock));
+          }
         };
 
         /**
@@ -127,7 +144,6 @@ class List
             pthread_mutex_unlock(&mutex_2);
             return true;
         }
-
 
         /**
          * Returns the current size of the list
