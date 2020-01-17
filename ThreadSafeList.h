@@ -14,17 +14,20 @@ class List
         /**
          * Constructor
          */
-        List() { //TODO: add your implementation }
+        List() { //TODO: add your implementation
+        }
 
         /**
          * Destructor
          */
-        ~List(){ //TODO: add your implementation }
+        ~List(){ //TODO: add your implementation
+        }
 
         class Node {
          public:
           T data;
           Node *next;
+          pthread_mutex_t lock;
           // TODO: Add your methods and data members
         };
 
@@ -85,9 +88,7 @@ class List
 		// Don't remove
         virtual void __remove_hook() {}
 
-    private:
-        Node* head;
-    // TODO: Add your own methods and data members
+
 };
 
 #endif //THREAD_SAFE_LIST_H_
