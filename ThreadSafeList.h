@@ -10,16 +10,20 @@ using namespace std;
 template <typename T>
 class List 
 {
+
     public:
         /**
          * Constructor
          */
-        List() { //TODO: add your implementation }
+        List(): size (0), head(NULL){
+            pthread_mutex_init(&mutex_1, NULL);
+            pthread_mutex_init(&mutex_2, NULL);
+        }
 
         /**
          * Destructor
          */
-        ~List(){ //TODO: add your implementation }
+        ~List() = default;
 
         class Node {
          public:
@@ -35,7 +39,53 @@ class List
          * @return true if a new node was added and false otherwise
          */
         bool insert(const T& data) {
-			//TODO: add your implementation
+
+            pthread_mutex_lock(&mutex_1);
+            Node node = new Node(data);
+			if (this->head == NULL){
+                this->head = *node;
+                pthread_mutex_lock(&mutex_2);
+                this->size++;
+                pthread_mutex_unlock(&mutex_2);
+                pthread_mutex_unlock(&mutex_1);
+                return true;
+			}
+			this->head.Lock();
+            if (data < this->head->data){
+                node->SetNext(head);
+                this-> head = *node;
+            }
+            pthread_mutex_unlock(&mutex_1);
+			Node* tmp_pointer = head;
+            Node* tmp_pointer2;
+			while (data > tmp_pointer->data){
+			    if (tmp_pointer2 != NULL) {
+                    tmp_pointer2->Unlock();
+                }
+			    tmp_pointer2 = tmp_pointer;
+			    tmp_pointer = tmp_pointer->GetNext();
+			    if (tmp_pointer == NULL){
+			        tmp_pointer2->SetNext(node);
+                    pthread_mutex_lock(&mutex_2);
+                    this->size++;
+                    pthread_mutex_unlock(&mutex_2);
+                    tmp_pointer2->Unlock();
+			        return true;
+			    }
+			}
+			if (data == tmp_pointer->data){
+			    tmp_pointer->Unlock();
+                tmp_pointer2->Unlock();
+			    return false;
+			}
+			node->SetNext(tmp_pointer);
+			tmp_pointer2->SetNext(node);
+            pthread_mutex_lock(&mutex_2);
+            this->size++;
+            pthread_mutex_unlock(&mutex_2);
+            tmp_pointer->Unlock();
+            tmp_pointer2->Unlock();
+            return true;
         }
 
         /**
@@ -44,8 +94,40 @@ class List
          * @return true if a matched node was found and removed and false otherwise
          */
         bool remove(const T& value) {
-			//TODO: add your implementation
+            pthread_mutex_lock(&mutex_1);
+            if (this->head == NULL) {
+                pthread_mutex_unlock(&mutex_1);
+                return false;
+            }
+            this->head->Lock();
+            pthread_mutex_unlock(&mutex_1);
+            Node* tmp_pointer = this->head;
+            Node* tmp_pointer2;
+            while (value >= tmp_pointer->data){
+                if (tmp_pointer2 != NULL) {
+                    tmp_pointer2->Unlock();
+                }
+                tmp_pointer2 = tmp_pointer;
+                tmp_pointer = tmp_pointer->GetNext();
+                if (tmp_pointer == NULL){
+                    tmp_pointer2->UnLock();
+                    return false;
+                }
+            }
+            if (tmp_pointer->data != value){
+                tmp_pointer->Unlock();
+                tmp_pointer2->Unlock();
+                return false;
+            }
+            tmp_pointer2->SetNext(tmp_pointer->GetNext(false));
+            delete(*tmp_pointer);
+            tmp_pointer2->Unlock();
+            pthread_mutex_lock(&mutex_2);
+            this->size--;
+            pthread_mutex_unlock(&mutex_2);
+            return true;
         }
+
 
         /**
          * Returns the current size of the list
@@ -84,9 +166,11 @@ class List
         virtual void __add_hook() {}
 		// Don't remove
         virtual void __remove_hook() {}
-
-    private:
-        Node* head;
+private:
+    Node* head;
+    int size;
+    pthread_mutex_t mutex_1;
+    pthread_mutex_t mutex_2;
     // TODO: Add your own methods and data members
 };
 
