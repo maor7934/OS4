@@ -5,7 +5,6 @@
     Barrier::Barrier(unsigned int num_of_threads): num_of_threads(num_of_threads),enter_counter(0),exit_counter(num_of_threads) {
         pthread_mutex_init(&mutex_1, NULL);
     }
-
     void Barrier::wait() {
         pthread_mutex_lock(&mutex_1);
         enter_counter++;
