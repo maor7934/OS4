@@ -70,7 +70,7 @@ class List
                 return true;
 			}
 			this->head->Lock();
-            if (data < this->head->data){
+            if (data < this->head->data){//data is lower than head , so i insert it before the head
                 Node* node = new Node(data);
                 node->SetNext(head);
                 this-> head = node;
@@ -78,6 +78,8 @@ class List
                 pthread_mutex_lock(&mutex_2);
                 this->size++;
                 pthread_mutex_unlock(&mutex_2);
+                head->GetNext(false)->Unlock();
+                pthread_mutex_unlock(&list_mutex);
                 return true;
             }
             pthread_mutex_unlock(&list_mutex);
@@ -131,9 +133,25 @@ class List
                 return false;
             }
             this->head->Lock();
+            if (this->head->data == value){
+                Node* tmp = head->GetNext();
+                this->head->Unlock();
+                delete(head);
+                    head = tmp;
+                __remove_hook();
+                pthread_mutex_lock(&mutex_2);
+                this->size--;
+                pthread_mutex_unlock(&mutex_2);
+                pthread_mutex_unlock(&list_mutex);
+                if (tmp != NULL)
+                {
+                    this->head->Unlock();
+                }
+                return true;
+            }
             pthread_mutex_unlock(&list_mutex);
             Node* tmp_pointer = this->head;
-            Node* tmp_pointer2;
+            Node* tmp_pointer2 = NULL;
             while (value > tmp_pointer->data){
                 if (tmp_pointer2 != NULL) {
                     tmp_pointer2->Unlock();
@@ -147,7 +165,9 @@ class List
             }
             if (tmp_pointer->data != value){
                 tmp_pointer->Unlock();
-                tmp_pointer2->Unlock();
+                if (tmp_pointer2 != NULL) {
+                    tmp_pointer2->Unlock();
+                }
                 return false;
             }
             tmp_pointer2->SetNext(tmp_pointer->GetNext(false));
@@ -206,7 +226,6 @@ private:
 
     pthread_mutex_t list_mutex;
     pthread_mutex_t mutex_2;
-    // TODO: Add your own methods and data members
 };
 
 #endif //THREAD_SAFE_LIST_H_

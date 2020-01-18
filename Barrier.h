@@ -9,14 +9,13 @@ private:
     int enter_counter;
     int exit_counter;
     pthread_mutex_t mutex_1;
+    sem_t sem;
+    sem_t sem2;
 public:
     Barrier(unsigned int num_of_threads);
     void wait();
 	unsigned int waitingThreads();
     ~Barrier();
-
-	// TODO: define the member variables
-	// Remember: you can only use semaphores!
 };
 
 #endif // BARRIER_H_
